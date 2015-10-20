@@ -1,15 +1,64 @@
 import requests
-import config
+from config import *
 from BeautifulSoup import BeautifulSoup # Could use re to remove dependency.
 
-class AuthenticationError(exception):
+class AuthenticationError(Exception):
 	pass
 
-class AvailabilityError(exception):
+class AvailabilityError(Exception):
 	pass
 
-class BasketError(exception):
+class BasketError(Exception):
 	pass
+
+LOGON = "https://sportsbookings.leeds.ac.uk/OnlineBookings/Account/LogOn"
+SEARCH = "https://sportsbookings.leeds.ac.uk/OnlineBookings/Search/PerformSearch"
+ADD_TO_BASKET = "https://sportsbookings.leeds.ac.uk/OnlineBookings/Search/AddEnrolmentToBasket"
+CHECKOUT = "https://sportsbookings.leeds.ac.uk/payments"
+CONFIRM = "https://sportsbookings.leeds.ac.uk/Payments/Response/FoC"
+RECEIPT = "https://sportsbookings.leeds.ac.uk/Payments/Receipt"
+
+# Hide password in ENV.
+LOGON_PAYLOAD = {"UserName":SPIN_USER,
+				 "Password":SPIN_PASS,
+				 "RememberMe":"false",
+				}
+
+SEARCH_PAYLOAD = {"searchType":"1",
+				  "SearchType":"1",
+				  "SavedSearchName":"",
+				  "SearchForActivity":"0",
+				  "SearchForClass":"1",
+				  "PersistSearchTimes":"False",
+				  "SiteID":"1",
+				  "Activity": "SESP",# "SESP", # or SE28
+				  "SearchDate": "06/10/2015",
+				  "EnglishDate": "6_10_2015",
+				  "English_TimeFrom": "06_00",
+				  "English_TimeTo":"21_00",
+				  "HeadCount":"1",
+				  "SaveSearch":"false",
+				  "submitButton":"Search"
+				 } 
+
+BASKET_PAYLOAD = {"SiteNo":"1",
+				  "ResultId":"1"}
+
+CHECKOUT_PAYLOAD = {"PaymentDescription":"Online booking",
+				   "BasketID":"",
+				   "CallingApp":"Horizons",
+				   "Culture":"en-GB",
+				   "LinkBackUrlBase":"https://sportsbookings.leeds.ac.uk/OnlineBookings/",
+				   "LinkBackUrlSuccess":"https://sportsbookings.leeds.ac.uk/OnlineBookings/",
+				   "LinkBackUrlFail":"https://sportsbookings.leeds.ac.uk/OnlineBookings/Basket/ViewDetail",
+				   "LinkBackUrlAmend":"https://sportsbookings.leeds.ac.uk/OnlineBookings/Basket/ViewDetail",
+				   "LinkBackUrlContact":"http://sport.leeds.ac.uk/page.asp?section=82&sectionTitle=Contact+Us",
+				   "Region":"7",
+				   "PresumedPayerEmail":"mmasm@leeds.ac.uk",
+				   "TermsAccepted":"true",
+				   "submitButton":"Checkout"
+				  }
+
 
 class ClassBooker(object):
 	""" 
@@ -17,64 +66,18 @@ class ClassBooker(object):
 	Includes logging on, availability checking, and class booking. 
 	"""
 
-	LOGON = "https://sportsbookings.leeds.ac.uk/OnlineBookings/Account/LogOn"
-	SEARCH = "https://sportsbookings.leeds.ac.uk/OnlineBookings/Search/PerformSearch"
-	ADD_TO_BASKET = "https://sportsbookings.leeds.ac.uk/OnlineBookings/Search/AddEnrolmentToBasket"
-	CHECKOUT = "https://sportsbookings.leeds.ac.uk/payments"
-	CONFIRM = "https://sportsbookings.leeds.ac.uk/Payments/Response/FoC"
-	RECEIPT = "https://sportsbookings.leeds.ac.uk/Payments/Receipt"
-
-	# Hide password in ENV.
-	LOGON_PAYLOAD = {"UserName":SPIN_USER,
-					 "Password":SPIN_PASS,
-					 "RememberMe":"false",
-					}
-
-	SEARCH_PAYLOAD = {"searchType":"1",
-					  "SearchType":"1",
-					  "SavedSearchName":"",
-					  "SearchForActivity":"0",
-					  "SearchForClass":"1",
-					  "PersistSearchTimes":"False",
-					  "SiteID":"1",
-					  "Activity": "SEN6",# "SESP", # or SE28
-					  "SearchDate": "02/10/2015",
-					  "EnglishDate": "2_10_2015",
-					  "English_TimeFrom": "06_00",
-					  "English_TimeTo":"21_00",
-					  "HeadCount":"1",
-					  "SaveSearch":"false",
-					  "submitButton":"Search"
-					 } 
-
-	BASKET_PAYLOAD = {"SiteNo":"1",
-					  "ResultId":"1"}
-
-	CHECKOUT_PAYLOAD = {"PaymentDescription":"Online booking",
-					   "BasketID":"",
-					   "CallingApp":"Horizons",
-					   "Culture":"en-GB",
-					   "LinkBackUrlBase":"https://sportsbookings.leeds.ac.uk/OnlineBookings/",
-					   "LinkBackUrlSuccess":"https://sportsbookings.leeds.ac.uk/OnlineBookings/",
-					   "LinkBackUrlFail":"https://sportsbookings.leeds.ac.uk/OnlineBookings/Basket/ViewDetail",
-					   "LinkBackUrlAmend":"https://sportsbookings.leeds.ac.uk/OnlineBookings/Basket/ViewDetail",
-					   "LinkBackUrlContact":"http://sport.leeds.ac.uk/page.asp?section=82&sectionTitle=Contact+Us",
-					   "Region":"7",
-					   "PresumedPayerEmail":"mmasm@leeds.ac.uk",
-					   "TermsAccepted":"true",
-					   "submitButton":"Checkout"
-					  }
-
 	def __init__(self):
 		"""Initialises a requests Session"""				  
 		self.session = requests.Session()
 		return None
 
-	def authenticate(self, user, password):
+	def authenticate(self, user=None, password=None):
 		"""Authenticates the session"""
-		LOGON_PAYLOAD["UserName"] = user
-		LOGON_PAYLOAD["Password"] = password
-		self.auth = self.session.post(LOGON, LOGON_PAYLOAD)
+		if user is not None:
+			LOGON_PAYLOAD["UserName"] = user
+		if password is not None:
+			LOGON_PAYLOAD["Password"] = password
+		self.auth = self.session.post(LOGON, data=LOGON_PAYLOAD)
 		if 1==1: # Think of suitable condition
 			return None
 		else:
@@ -84,9 +87,10 @@ class ClassBooker(object):
 		"""Searches for specified class"""
 		SEARCH_PAYLOAD["Activity"] = activity
 		SEARCH_PAYLOAD["EnglishDate"] = date
+		SEARCH_PAYLOAD["SearchDate"] = '/'.join(date.split('_'))
 		SEARCH_PAYLOAD["English_TimeFrom"] = start_time
 		SEARCH_PAYLOAD["English_TimeTo"] = end_time
-		self.search = self.session.post(SEARCH, SEARCH_PAYLOAD)
+		self.search_result = self.session.post(SEARCH, data=SEARCH_PAYLOAD)
 		if 1==1:
 			return None
 		else:
@@ -96,7 +100,7 @@ class ClassBooker(object):
 		"""Adds activity to basket"""
 		BASKET_PAYLOAD["SiteNo"] = str(site_id)
 		BASKET_PAYLOAD["ResultId"] = str(result_id)
-		self.basket = self.session.get(ADD_TO_BASKET, BASKET_PAYLOAD)
+		self.basket = self.session.get(ADD_TO_BASKET, params=BASKET_PAYLOAD)
 		if 1==1:
 			return None
 		else:
@@ -107,12 +111,12 @@ class ClassBooker(object):
 		soup = BeautifulSoup(self.basket.text)
 		self.basket_id = soup.find("input",{"name":"BasketID"}).get("value")
 		CHECKOUT_PAYLOAD["BasketID"] = self.basket_id
-		checkout = s.post(CHECKOUT, CHECKOUT_PAYLOAD)
+		checkout = self.session.post(CHECKOUT, CHECKOUT_PAYLOAD)
 		return None
 
 	def confirm(self):
 		"""Confirm basket checkout"""
-		self.confirm = self.session.get(CONFIRM)
+		self.confirmation = self.session.get(CONFIRM)
 		return None
 
 	def receipt(self):
@@ -123,31 +127,31 @@ class ClassBooker(object):
 												  "BasketID": self.basket_id})
 		return None
 
-# 1. Start session
-s = requests.Session()
+# # 1. Start session
+# s = requests.Session()
 
-# 2. Authenticate
-r1 = s.post(LOGON, LOGON_PAYLOAD)
+# # 2. Authenticate
+# r1 = s.post(LOGON, LOGON_PAYLOAD)
 
-# 3. Search
-# Search logic goes here - what do we want to look for?
-r2 = s.post(SEARCH, SEARCH_PAYLOAD, cookies=r1.cookies)
+# # 3. Search
+# # Search logic goes here - what do we want to look for?
+# r2 = s.post(SEARCH, SEARCH_PAYLOAD, cookies=r1.cookies)
 
-# 4. Add to Basket
-# Availability checking logic goes here
-r3 = s.get(ADD_TO_BASKET, BASKET_PAYLOAD, cookies=r2.cookies)
+# # 4. Add to Basket
+# # Availability checking logic goes here
+# r3 = s.get(ADD_TO_BASKET, BASKET_PAYLOAD, cookies=r2.cookies)
 
-# 5. Checkout
-soup = bs.BeautifulSoup(r3.text)
-basket_id = soup.find("input",{"name":"BasketID"}).get("value")
-CHECKOUT_PAYLOAD["BasketID"] = basket_id
-r4 = s.post(CHECKOUT, CHECKOUT_PAYLOAD, cookies=r3.cookies)
+# # 5. Checkout
+# soup = bs.BeautifulSoup(r3.text)
+# basket_id = soup.find("input",{"name":"BasketID"}).get("value")
+# CHECKOUT_PAYLOAD["BasketID"] = basket_id
+# r4 = s.post(CHECKOUT, CHECKOUT_PAYLOAD, cookies=r3.cookies)
 
-# 6. Confirm Booking?
-r5 = s.get(CONFIRM, cookies=r4.cookies)
+# # 6. Confirm Booking?
+# r5 = s.get(CONFIRM, cookies=r4.cookies)
 
-# This should be the response all being well.
-# We can pull the receipt to email if we can get the transaction id.
-GET2 = "https://sportsbookings.leeds.ac.uk/Payments/Receipt?TransactionID=532525&BasketId=6729b0be-c37f-431b-8b8f-186ef2027be2"
+# # This should be the response all being well.
+# # We can pull the receipt to email if we can get the transaction id.
+# GET2 = "https://sportsbookings.leeds.ac.uk/Payments/Receipt?TransactionID=532525&BasketId=6729b0be-c37f-431b-8b8f-186ef2027be2"
 
-# 7. Email/Cleanup
+# # 7. Email/Cleanup
