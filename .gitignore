@@ -1,3 +1,5 @@
 config.py
 *.pyc
 signup_old.py
+client_secret.json
+credentials.dat
