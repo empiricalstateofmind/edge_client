@@ -117,7 +117,7 @@ def add_class_to_calendar(activity, date_time):
     service = get_service(credentials)
     calendars = get_calendars(service)
     event_body = create_event(activity, date_time, date_time + timedelta(minutes=45))
-    event = add_event(service, calendars['Gym/Sports'], event_body)
+    add_event(service, calendars['Gym/Sports'], event_body)
 
 
 if __name__ == '__main__':
@@ -128,5 +128,4 @@ if __name__ == '__main__':
     event = add_event(service, calendars['Gym/Sports'], event_body)
     # event = service.events().insert(calendarId=calendars['Gym/Sports'], body=event_body).execute()
     # event = service.events().insert(calendarId='primary', body=event).execute()
-    print
-    'Event created: %s' % (event.get('htmlLink'))
+    print('Event created: %s' % (event.get('htmlLink')))

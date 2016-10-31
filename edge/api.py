@@ -141,7 +141,7 @@ class ClassBooker(object):
         soup = BeautifulSoup(self.basket.text)
         self.basket_id = soup.find("input", {"name": "BasketID"}).get("value")
         CHECKOUT_PAYLOAD["BasketID"] = self.basket_id
-        checkout = self.session.post(CHECKOUT, CHECKOUT_PAYLOAD)
+        self.session.post(CHECKOUT, CHECKOUT_PAYLOAD)
         return None
 
     def confirm(self):
