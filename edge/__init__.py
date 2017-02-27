@@ -1,7 +1,7 @@
-from .api import *
+import api
 
 try:
-    from .output import *
-except ImportError as e:
-    print("Unable to load OUTPUT (Google Calendar)")
-    print(e)
+	import output
+except ImportError, e:
+	print "Unable to load OUTPUT (Google Calendar)"
+	print e

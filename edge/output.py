@@ -13,11 +13,12 @@ CREDENTIALS = os.path.join(os.path.dirname(__file__), "credentials.dat")
 APPLICATION_NAME = 'Edge Signup'
 
 # NOT SURE WHAT THIS DOES
-try:
-    import argparse
-    flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
-except ImportError:
-    flags = None
+#try:
+#    import argparse
+#    flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
+#except ImportError:
+#    flags = None
+flags = None
 
 event = {
   'summary': 'Test',
